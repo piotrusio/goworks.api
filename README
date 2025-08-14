@@ -1,0 +1,61 @@
+# API Service Status Summary
+
+This document provides a summary of the current state of the API service, detailing its architecture, data flows, and key features.
+
+---
+
+## Architecture Overview
+
+The service is built on a robust, modern architecture designed for scalability and maintainability.
+
+-   **CQRS & Hexagonal Architecture:** The service strictly separates the write-side (**Commands**) from the read-side (**Queries**). It uses a Hexagonal (Ports and Adapters) architecture, with the core business logic in the `domain` package, surrounded by application services and infrastructure adapters. This ensures a clean separation of concerns.
+-   **Technology Stack:**
+    -   **Language:** Go
+    -   **API Router:** Chi
+    -   **Databases:**
+        -   **Write Model:** **PostgreSQL** (via Neon DB) is used to ensure strong data consistency and integrity.
+        -   **Read Model:** **MongoDB** is used to provide fast, denormalized data for queries.
+    -   **Messaging:** **Google Cloud Pub/Sub** facilitates asynchronous, event-driven communication between different parts of the system.
+    -   **Containerization:** The entire application and its database are containerized using **Docker** for a consistent and portable local development environment.
+
+---
+
+## Write-Side (Command) Flow
+
+The system has two distinct entry points for creating fabric data, both of which follow a clear, validated flow to ensure data integrity.
+
+1.  **Direct API Creation:** A user can create a fabric by sending a `POST` request to the `/v1/fabrics` endpoint.
+2.  **ERP Event Ingestion:** An external ERP system can publish a message to the `erp-events` Pub/Sub topic. Your service consumes this message via a push subscription to the `/pubsub/erp/receive` endpoint.
+
+### Key Write-Side Features:
+
+-   **Input Validation:** All incoming data from both entry points is validated against a shared set of rules (e.g., code length, format, name length). This prevents invalid data from entering the system and correctly returns a **422 Unprocessable Entity** status.
+-   **Duplicate Check:** The system uses the `FabricCommandRepository` to save new fabrics to the PostgreSQL database. If a fabric code already exists, the database's `UNIQUE` constraint is triggered. The handler correctly interprets this specific error and returns a **409 Conflict** status, providing meaningful feedback and preventing duplicate data.
+-   **Event Publishing:** Upon a successful save to PostgreSQL, a `FabricCreated` event is published to a Pub/Sub topic. This event serves as the source of truth for updating read models and other downstream systems.
+
+---
+
+## Read-Side (Query) and Projection Flow
+
+The read-side is designed to be fast and efficient, completely decoupled from the write-side.
+
+-   **Projection:** A dedicated subscriber listens for `FabricCreated` events. When an event is received, it uses the `ReadModelRepository` to create or update a denormalized fabric document in the **MongoDB** database.
+-   **Querying:** When a user sends a `GET` request to `/v1/fabrics/{code}`, the `FabricQueryHandler` uses its dedicated `FabricQueryRepository` to fetch the pre-built document directly from MongoDB, ensuring a fast response time.
+
+---
+
+## Error Handling and Data Integrity
+
+The service is designed to be resilient and provide clear feedback.
+
+-   **Business Rule Violations:** Specific domain errors (like invalid input or duplicate entries) are translated into appropriate `4xx` HTTP status codes.
+-   **Pub/Sub Safety:** By returning `4xx` status codes for permanently invalid messages (e.g., bad format, duplicates), the handler correctly acknowledges the message to Pub/Sub, preventing it from being retried endlessly as a "poison pill." Temporary server failures result in a `5xx` error, correctly signaling to Pub/Sub that the message should be retried.
+
+---
+
+## Infrastructure and Deployment
+
+-   **Cloud Provider:** The system is designed to be deployed on **Google Cloud Platform**.
+-   **Infrastructure as Code:** A `gcp.sh` script is used to provision necessary cloud resources, including Pub/Sub topics and Secret Manager secrets.
+-   **Database:** The service is configured to use a managed PostgreSQL database (like **Neon DB**) via a `POSTGRES_URI` stored securely in Google Cloud Secret Manager.
+-   **Local Development:** A `docker-compose.yaml` file provides a fully containerized local environment, ensuring that development and testing are consistent and easy to set up.api

@@ -1,0 +1,53 @@
+name: s-works-api
+
+services:
+  s-works-postgres:
+    image: postgres:latest
+    container_name: s-works-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: s-works
+      POSTGRES_USER: s-works
+      POSTGRES_PASSWORD: s-works
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${HOME}/Postgres/s-works:/var/lib/postgresql/data
+      # - ${HOME}/Postgres/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U s-works"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - s-works-net
+
+  nats:
+    image: nats:latest
+    container_name: s-works-nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222" # Client port
+      - "8222:8222" # Monitoring port
+    networks:
+      - s-works-net
+
+  api:
+    build: .
+    image: s-works-api
+    container_name: s-works-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NATS_URL=nats://nats:4222
+      - POSTGRES_URI=postgresql://s-works:s-works@s-works-postgres:5432/s-works?sslmode=disable
+    depends_on:
+      s-works-postgres:
+        condition: service_healthy
+    networks:
+      - s-works-net
+
+networks:
+  s-works-net:
+    name: s-works-net

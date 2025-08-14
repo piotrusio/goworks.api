@@ -1,0 +1,30 @@
+# Build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.test
+*.out
+
+# VCS and tools
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Dependencies
+vendor/
+**/node_modules/
+
+# Temporary & log files
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem

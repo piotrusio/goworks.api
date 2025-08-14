@@ -1,0 +1,99 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+# Ignore node_modules directories in any nested project
+**/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+# Ignore coverage folders in any nested project
+**/coverage
+
+# next.js
+# Ignore .next, out, and build folders in any nested project
+**/.next
+**/out
+**/build
+
+# production
+# (This was /build, which is now covered above)
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files (can opt-in for commiting if needed)
+# It's good practice to keep these patterns as they are, to ignore .env files everywhere.
+.env*
+!/.env.example
+!/.env.production
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# turborepo
+# Ignore .turbo directories in any nested project
+.turbo
+**/.turbo
+
+**/.vercel
+
+# clerk configuration (can include secrets)
+**/.clerk
+
+# Golang - Standard Go ignores, patterns from https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# bin
+**/bin
+
+# temp
+**/.temp
+**/.data
+
+# log files
+*.log
+**/.env*.local
+
+# IDEs and Editors - Common IDE/editor files
+**/.idea/** **/*~**
+
+**/pub-sub-key.json
+
+# .creds files
+**/*.creds
+
+# .db files
+**/*.db
