@@ -1,18 +1,18 @@
-name: s-works-api
+name: goworks-api
 
 services:
-  s-works-postgres:
+  postgres:
     image: postgres:latest
-    container_name: s-works-postgres
+    container_name: goworks-pg
     restart: unless-stopped
     environment:
-      POSTGRES_DB: s-works
-      POSTGRES_USER: s-works
-      POSTGRES_PASSWORD: s-works
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
-      - ${HOME}/Postgres/s-works:/var/lib/postgresql/data
+      - ${HOME}/Postgres/goworks:/var/lib/postgresql/data
       # - ${HOME}/Postgres/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U s-works"]
@@ -21,33 +21,33 @@ services:
       retries: 5
       start_period: 60s
     networks:
-      - s-works-net
+      - goworks-net
 
   nats:
     image: nats:latest
-    container_name: s-works-nats
+    container_name: goworks-nats
     restart: unless-stopped
     ports:
       - "4222:4222" # Client port
       - "8222:8222" # Monitoring port
     networks:
-      - s-works-net
+      - goworks-net
 
   api:
     build: .
-    image: s-works-api
-    container_name: s-works-api
+    image: goworks-api
+    container_name: goworks-api
     ports:
       - "8080:8080"
     environment:
       - NATS_URL=nats://nats:4222
-      - POSTGRES_URI=postgresql://s-works:s-works@s-works-postgres:5432/s-works?sslmode=disable
+      - POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
     depends_on:
-      s-works-postgres:
+      postgres:
         condition: service_healthy
     networks:
-      - s-works-net
+      - goworks-net
 
 networks:
-  s-works-net:
-    name: s-works-net
+  goworks-net:
+    name: goworks-net
